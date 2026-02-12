@@ -39,35 +39,39 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#C1D8C3] flex flex-col items-center justify-center p-0 sm:p-4">
-      <div className="w-full max-w-md h-screen sm:h-[90vh] bg-[#C1D8C3] sm:shadow-2xl sm:rounded-3xl relative overflow-hidden flex flex-col border-0 sm:border-4 border-white/20">
+    <div className="min-h-screen bg-[#C1D8C3] flex flex-col sm:items-center sm:justify-center">
+      {/* 
+          - On mobile: w-full h-screen (no margins, no rounding)
+          - On desktop (sm:): max-w-md h-[90vh] shadow, rounding, border
+      */}
+      <div className="w-full h-screen sm:max-w-md sm:h-[90vh] bg-[#C1D8C3] sm:shadow-2xl sm:rounded-[3rem] relative overflow-hidden flex flex-col sm:border-8 border-white/20">
         
-        <header className="p-6 flex justify-between items-center z-10 pt-10 sm:pt-6">
+        <header className="px-4 py-6 flex justify-between items-center z-10 pt-12 sm:pt-8">
           <button 
             onClick={() => setIsSettingsOpen(true)}
             className="p-2 hover:bg-black/5 rounded-full transition-colors"
           >
-            <Settings size={24} className="text-black/70" />
+            <Settings size={22} className="text-black/70" />
           </button>
           
-          <h1 className="text-sm font-bold tracking-widest text-black/60 uppercase">
+          <h1 className="text-[10px] font-black tracking-[0.3em] text-black/40 uppercase">
             {activeDay === currentDay ? 'Today' : `Day ${activeDay}`}
           </h1>
 
-          <div className="flex gap-2">
+          <div className="flex gap-1">
             {deferredPrompt && (
                <button 
                 onClick={handleInstall}
                 className="p-2 bg-black text-white rounded-full animate-bounce"
               >
-                <Download size={20} />
+                <Download size={18} />
               </button>
             )}
             <button 
               onClick={() => setMode(mode === 'grid' ? 'calendar' : 'grid')}
               className={`p-2 rounded-full transition-all ${mode === 'grid' ? 'bg-black text-white' : 'hover:bg-black/5 text-black/70'}`}
             >
-              <Grid size={24} />
+              <Grid size={22} />
             </button>
           </div>
         </header>
@@ -106,20 +110,20 @@ const App: React.FC = () => {
           )}
         </main>
 
-        <footer className="p-6 pb-10 sm:pb-6 flex justify-around items-center border-t border-black/5 bg-white/10 backdrop-blur-sm">
+        <footer className="px-4 py-6 pb-12 sm:pb-8 flex justify-around items-center border-t border-black/5 bg-white/10 backdrop-blur-md">
           <button 
             onClick={() => { setMode('calendar'); setSelectedViewerDay(null); }}
-            className={`p-4 rounded-2xl transition-all ${mode === 'calendar' ? 'bg-black text-white' : 'text-black/60 hover:bg-black/5'}`}
+            className={`p-4 rounded-2xl transition-all ${mode === 'calendar' ? 'bg-black text-white shadow-lg' : 'text-black/50 hover:bg-black/5'}`}
           >
-            <Calendar size={28} />
+            <Calendar size={26} />
           </button>
           
           <button 
             onClick={() => setMode('input')}
             disabled={currentDay > 100}
-            className={`p-4 rounded-2xl transition-all ${mode === 'input' ? 'bg-black text-white' : 'text-black/60 hover:bg-black/5'} ${currentDay > 100 ? 'opacity-30 cursor-not-allowed' : ''}`}
+            className={`p-4 rounded-2xl transition-all ${mode === 'input' ? 'bg-black text-white shadow-lg' : 'text-black/50 hover:bg-black/5'} ${currentDay > 100 ? 'opacity-20 cursor-not-allowed' : ''}`}
           >
-            <PenLine size={28} />
+            <PenLine size={26} />
           </button>
         </footer>
 

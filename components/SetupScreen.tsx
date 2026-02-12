@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight, Clock } from 'lucide-react';
 
 interface SetupScreenProps {
   onComplete: (notificationTime: string) => void;
@@ -11,49 +11,65 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onComplete }) => {
   const [step, setStep] = useState(1);
 
   return (
-    <div className="min-h-screen bg-[#C1D8C3] flex items-center justify-center p-6 text-black">
-      <div className="w-full max-w-md bg-white rounded-[3rem] p-10 shadow-2xl animate-in zoom-in duration-500">
+    <div className="fixed inset-0 bg-[#C1D8C3] flex items-center justify-center text-black z-[100]">
+      <div className="w-full h-full sm:max-w-md sm:h-[80vh] bg-white sm:rounded-[3rem] p-6 sm:p-12 flex flex-col justify-center shadow-2xl relative overflow-hidden">
+        
+        {/* Background Decorative Element */}
+        <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-[#C1D8C3]/20 rounded-full blur-3xl"></div>
+
         {step === 1 ? (
-          <div className="space-y-8 animate-in slide-in-from-right duration-300">
-            <div className="w-20 h-20 bg-[#C1D8C3] rounded-3xl flex items-center justify-center mb-10">
-              <Sparkles size={40} />
+          <div className="space-y-10 animate-in slide-in-from-right duration-500 relative z-10">
+            <div className="inline-flex p-5 bg-[#C1D8C3] rounded-[2rem] shadow-inner">
+              <Sparkles size={48} className="text-black" />
             </div>
-            <h1 className="text-4xl font-display font-black tracking-tighter leading-none">
-              100일<br />글쓰기 챌린지
-            </h1>
-            <p className="text-lg font-medium text-black/60 leading-relaxed">
-              매일 150자씩,<br />
-              당신의 이야기를 100일 동안<br />
-              기록하는 여정을 시작합니다.
-            </p>
+            <div className="space-y-4">
+              <h1 className="text-5xl font-display font-black tracking-tighter leading-[0.9]">
+                The<br />100 Days<br />Journey.
+              </h1>
+              <p className="text-lg font-medium text-black/50 leading-relaxed max-w-[240px]">
+                150 letters every day.<br />
+                A hundred days of your own stories.
+              </p>
+            </div>
             <button 
               onClick={() => setStep(2)}
-              className="w-full bg-black text-white py-5 rounded-3xl font-black text-lg flex items-center justify-center gap-2 hover:translate-x-1 transition-transform"
+              className="w-full bg-black text-white py-6 rounded-[2rem] font-black text-xl flex items-center justify-center gap-3 hover:gap-5 transition-all shadow-xl active:scale-95"
             >
-              시작하기 <ArrowRight />
+              START JOURNEY <ArrowRight size={24} />
             </button>
           </div>
         ) : (
-          <div className="space-y-8 animate-in slide-in-from-right duration-300">
-            <h2 className="text-3xl font-display font-black tracking-tighter">
-              언제 기록할까요?
-            </h2>
-            <p className="text-black/60 font-medium">
-              매일 정해진 시간에 알림을 보내드릴게요.
-            </p>
-            <div className="bg-black/5 p-8 rounded-3xl flex justify-center">
+          <div className="space-y-10 animate-in slide-in-from-right duration-500 relative z-10">
+             <div className="inline-flex p-5 bg-black rounded-[2rem] shadow-lg">
+              <Clock size={48} className="text-white" />
+            </div>
+            <div className="space-y-3">
+              <h2 className="text-4xl font-display font-black tracking-tighter">
+                When to write?
+              </h2>
+              <p className="text-black/50 font-medium">
+                We'll send you a gentle reminder<br />at your preferred time.
+              </p>
+            </div>
+            <div className="bg-black/5 p-10 rounded-[2.5rem] flex justify-center border border-black/5">
               <input 
                 type="time" 
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="bg-transparent font-display text-6xl font-black tracking-tight focus:outline-none"
+                className="bg-transparent font-display text-7xl font-black tracking-tight focus:outline-none cursor-pointer"
               />
             </div>
             <button 
               onClick={() => onComplete(time)}
-              className="w-full bg-black text-white py-5 rounded-3xl font-black text-lg hover:scale-[1.02] transition-transform"
+              className="w-full bg-black text-white py-6 rounded-[2rem] font-black text-xl hover:scale-[1.02] transition-all shadow-xl active:scale-95"
             >
-              여정 시작하기
+              LET'S BEGIN
+            </button>
+            <button 
+              onClick={() => setStep(1)}
+              className="w-full text-black/30 font-black text-sm tracking-widest uppercase py-2"
+            >
+              Back
             </button>
           </div>
         )}

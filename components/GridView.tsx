@@ -9,8 +9,8 @@ interface GridViewProps {
 
 const GridView: React.FC<GridViewProps> = ({ entries, currentDay, onSelectDay }) => {
   return (
-    <div className="h-full flex flex-col p-6 animate-in fade-in duration-300">
-      <div className="grid grid-cols-5 gap-3 overflow-y-auto pb-8 pr-2">
+    <div className="h-full flex flex-col px-2 sm:px-4 py-2 animate-in fade-in duration-300">
+      <div className="grid grid-cols-5 gap-2 overflow-y-auto pb-10 pr-1 custom-scrollbar">
         {Array.from({ length: 100 }, (_, i) => i + 1).map((day) => {
           const hasContent = !!entries[day];
           const isLocked = day > currentDay;
@@ -24,15 +24,18 @@ const GridView: React.FC<GridViewProps> = ({ entries, currentDay, onSelectDay })
               className={`
                 aspect-square rounded-xl flex flex-col items-center justify-center transition-all border
                 ${isLocked ? 'opacity-20 bg-black/5 cursor-not-allowed border-transparent' : 
-                  isToday ? 'bg-black text-white border-black scale-105 z-10 shadow-lg' : 
-                  hasContent ? 'bg-white text-black border-black/10' : 
-                  'bg-white/30 text-black/40 border-black/5'}
+                  isToday ? 'bg-black text-white border-black scale-105 z-10 shadow-xl' : 
+                  hasContent ? 'bg-white text-black border-black/20 shadow-sm' : 
+                  'bg-white/30 text-black/20 border-black/5'}
                 hover:scale-105 active:scale-95
               `}
             >
-              <span className="text-[10px] font-black opacity-60 mb-1">D-{day}</span>
-              {hasContent && !isLocked && (
-                <div className="w-1.5 h-1.5 rounded-full bg-current" />
+              <span className="text-[9px] font-black opacity-60 mb-0.5">{day}</span>
+              {hasContent && !isLocked && !isToday && (
+                <div className="w-1 h-1 rounded-full bg-black/40 mt-1" />
+              )}
+              {isToday && (
+                 <div className="w-1 h-1 rounded-full bg-white mt-1 animate-pulse" />
               )}
             </button>
           );

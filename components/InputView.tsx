@@ -13,43 +13,42 @@ const InputView: React.FC<InputViewProps> = ({ day, existingText, onSave, onCanc
   const [text, setText] = useState(existingText);
 
   return (
-    <div className="h-full flex flex-col p-8 bg-white/40 animate-in slide-in-from-bottom duration-300">
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="text-2xl font-display font-black tracking-tighter text-black">
-          DAY {day} 기록하기
+    <div className="h-full flex flex-col px-2 sm:px-4 py-4 bg-white/20 animate-in slide-in-from-bottom duration-300">
+      <div className="flex justify-between items-center mb-4 px-2">
+        <h2 className="text-xl font-display font-black tracking-tighter text-black uppercase">
+          Day {day} Journal
         </h2>
-        <button onClick={onCancel} className="text-black/40 hover:text-black">
+        <button onClick={onCancel} className="p-2 text-black/30 hover:text-black">
           <X size={24} />
         </button>
       </div>
 
-      <div className="flex-1 flex flex-col relative bg-white/60 rounded-3xl p-6 shadow-inner border border-white/40">
+      <div className="flex-1 flex flex-col relative bg-white/80 rounded-[2rem] p-5 sm:p-6 shadow-xl border border-white/50">
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value.slice(0, 150))}
-          placeholder="오늘의 생각을 남겨주세요 (최대 150자)"
-          className="flex-1 bg-transparent resize-none text-xl leading-relaxed text-black/80 placeholder:text-black/20 focus:outline-none"
+          placeholder="What's on your mind today?"
+          className="flex-1 bg-transparent resize-none text-lg leading-relaxed text-black/80 placeholder:text-black/10 focus:outline-none"
           autoFocus
         />
-        <div className="mt-4 flex justify-between items-center">
-          <span className={`text-sm font-bold ${text.length >= 150 ? 'text-red-500' : 'text-black/40'}`}>
+        <div className="mt-4 flex justify-between items-center pt-4 border-t border-black/5">
+          <span className={`text-[10px] font-black tracking-widest ${text.length >= 150 ? 'text-red-500' : 'text-black/20'}`}>
             {text.length} / 150
           </span>
           <button 
             onClick={() => onSave(text)}
-            className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-2xl font-bold hover:scale-105 transition-transform active:scale-95"
+            disabled={text.trim().length === 0}
+            className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-2xl font-black text-sm hover:scale-105 transition-all active:scale-95 disabled:opacity-20"
           >
-            <Check size={20} />
-            기록 완료
+            <Check size={18} />
+            SAVE
           </button>
         </div>
       </div>
 
-      <div className="mt-8 text-center">
-        <p className="text-xs font-bold text-black/40 uppercase tracking-widest">
-          기록은 오늘이 지나면 수정할 수 없습니다
-        </p>
-      </div>
+      <p className="mt-4 text-center text-[9px] font-black text-black/30 uppercase tracking-[0.2em]">
+        Every word counts toward your 100 days
+      </p>
     </div>
   );
 };
