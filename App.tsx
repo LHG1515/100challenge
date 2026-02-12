@@ -1,13 +1,13 @@
 
 import React, { useState, useMemo } from 'react';
-import { Settings, Calendar, PenLine, Grid, ChevronLeft } from 'lucide-react';
-import { useChallenge } from './hooks/useChallenge';
-import { AppMode } from './types';
-import DailyView from './components/DailyView';
-import InputView from './components/InputView';
-import GridView from './components/GridView';
-import SettingsModal from './components/SettingsModal';
-import SetupScreen from './components/SetupScreen';
+import { Settings, Calendar, PenLine, Grid } from 'lucide-react';
+import { useChallenge } from './hooks/useChallenge.ts';
+import { AppMode } from './types.ts';
+import DailyView from './components/DailyView.tsx';
+import InputView from './components/InputView.tsx';
+import GridView from './components/GridView.tsx';
+import SettingsModal from './components/SettingsModal.tsx';
+import SetupScreen from './components/SetupScreen.tsx';
 
 const App: React.FC = () => {
   const { data, initializeChallenge, saveEntry, updateNotificationTime, getCurrentDayNumber } = useChallenge();
@@ -24,10 +24,8 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#C1D8C3] flex flex-col items-center justify-center p-4">
-      {/* Container simulating a mobile device or a clean card */}
       <div className="w-full max-w-md h-[90vh] bg-[#C1D8C3] shadow-2xl rounded-3xl relative overflow-hidden flex flex-col border-4 border-white/20">
         
-        {/* Header */}
         <header className="p-6 flex justify-between items-center z-10">
           <button 
             onClick={() => setIsSettingsOpen(true)}
@@ -50,7 +48,6 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        {/* Main Content Area */}
         <main className="flex-1 overflow-hidden relative">
           {mode === 'calendar' && (
             <DailyView 
@@ -85,7 +82,6 @@ const App: React.FC = () => {
           )}
         </main>
 
-        {/* Footer Navigation */}
         <footer className="p-6 flex justify-around items-center border-t border-black/5 bg-white/10 backdrop-blur-sm">
           <button 
             onClick={() => { setMode('calendar'); setSelectedViewerDay(null); }}
@@ -103,7 +99,6 @@ const App: React.FC = () => {
           </button>
         </footer>
 
-        {/* Settings Modal */}
         <SettingsModal 
           isOpen={isSettingsOpen} 
           onClose={() => setIsSettingsOpen(false)}

@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { ChallengeData } from '../types';
+import { ChallengeData } from '../types.ts';
 
 const STORAGE_KEY = 'writing_challenge_100';
 
