@@ -39,14 +39,15 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#C1D8C3] flex flex-col sm:items-center sm:justify-center">
+    <div className="w-full h-full flex flex-col sm:items-center sm:justify-center overflow-hidden">
       {/* 
-          - On mobile: w-full h-screen (no margins, no rounding)
-          - On desktop (sm:): max-w-md h-[90vh] shadow, rounding, border
+          Main Container:
+          - Mobile: Full screen, no borders, no padding
+          - Desktop: Rounded, shadowed, border
       */}
       <div className="w-full h-screen sm:max-w-md sm:h-[90vh] bg-[#C1D8C3] sm:shadow-2xl sm:rounded-[3rem] relative overflow-hidden flex flex-col sm:border-8 border-white/20">
         
-        <header className="px-4 py-6 flex justify-between items-center z-10 pt-12 sm:pt-8">
+        <header className="px-5 py-6 flex justify-between items-center z-10 pt-12 sm:pt-8 bg-transparent">
           <button 
             onClick={() => setIsSettingsOpen(true)}
             className="p-2 hover:bg-black/5 rounded-full transition-colors"
@@ -62,13 +63,16 @@ const App: React.FC = () => {
             {deferredPrompt && (
                <button 
                 onClick={handleInstall}
-                className="p-2 bg-black text-white rounded-full animate-bounce"
+                className="p-2 bg-black text-white rounded-full"
               >
                 <Download size={18} />
               </button>
             )}
             <button 
-              onClick={() => setMode(mode === 'grid' ? 'calendar' : 'grid')}
+              onClick={() => {
+                setMode(mode === 'grid' ? 'calendar' : 'grid');
+                setSelectedViewerDay(null);
+              }}
               className={`p-2 rounded-full transition-all ${mode === 'grid' ? 'bg-black text-white' : 'hover:bg-black/5 text-black/70'}`}
             >
               <Grid size={22} />
@@ -81,7 +85,10 @@ const App: React.FC = () => {
             <DailyView 
               day={activeDay} 
               text={data.entries[activeDay] || ''} 
-              onBack={() => setSelectedViewerDay(null)}
+              onBack={() => {
+                setSelectedViewerDay(null);
+                setMode('calendar');
+              }}
               showBackButton={selectedViewerDay !== null}
             />
           )}
@@ -110,10 +117,10 @@ const App: React.FC = () => {
           )}
         </main>
 
-        <footer className="px-4 py-6 pb-12 sm:pb-8 flex justify-around items-center border-t border-black/5 bg-white/10 backdrop-blur-md">
+        <footer className="px-5 py-6 pb-12 sm:pb-8 flex justify-around items-center border-t border-black/5 bg-white/10 backdrop-blur-md">
           <button 
             onClick={() => { setMode('calendar'); setSelectedViewerDay(null); }}
-            className={`p-4 rounded-2xl transition-all ${mode === 'calendar' ? 'bg-black text-white shadow-lg' : 'text-black/50 hover:bg-black/5'}`}
+            className={`p-4 rounded-2xl transition-all ${mode === 'calendar' && !selectedViewerDay ? 'bg-black text-white shadow-lg' : 'text-black/50 hover:bg-black/5'}`}
           >
             <Calendar size={26} />
           </button>

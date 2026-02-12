@@ -9,8 +9,11 @@ interface GridViewProps {
 
 const GridView: React.FC<GridViewProps> = ({ entries, currentDay, onSelectDay }) => {
   return (
-    <div className="h-full flex flex-col px-2 sm:px-4 py-2 animate-in fade-in duration-300">
-      <div className="grid grid-cols-5 gap-2 overflow-y-auto pb-10 pr-1 custom-scrollbar">
+    <div className="h-full flex flex-col animate-in fade-in duration-300">
+      {/* 
+          Grid layout touches the screen edges for a minimalist "calendar wall" look.
+      */}
+      <div className="grid grid-cols-5 gap-[1px] overflow-y-auto pb-20 custom-scrollbar bg-black/5">
         {Array.from({ length: 100 }, (_, i) => i + 1).map((day) => {
           const hasContent = !!entries[day];
           const isLocked = day > currentDay;
@@ -22,20 +25,25 @@ const GridView: React.FC<GridViewProps> = ({ entries, currentDay, onSelectDay })
               disabled={isLocked}
               onClick={() => onSelectDay(day)}
               className={`
-                aspect-square rounded-xl flex flex-col items-center justify-center transition-all border
-                ${isLocked ? 'opacity-20 bg-black/5 cursor-not-allowed border-transparent' : 
-                  isToday ? 'bg-black text-white border-black scale-105 z-10 shadow-xl' : 
-                  hasContent ? 'bg-white text-black border-black/20 shadow-sm' : 
-                  'bg-white/30 text-black/20 border-black/5'}
-                hover:scale-105 active:scale-95
+                aspect-square flex flex-col items-center justify-center transition-all relative
+                ${isLocked ? 'bg-black/[0.02] text-black/10 cursor-not-allowed' : 
+                  isToday ? 'bg-black text-white z-10' : 
+                  hasContent ? 'bg-white text-black' : 
+                  'bg-white/40 text-black/20'}
+                hover:opacity-80 active:scale-95
               `}
             >
-              <span className="text-[9px] font-black opacity-60 mb-0.5">{day}</span>
+              <span className="text-[11px] font-black">{day}</span>
               {hasContent && !isLocked && !isToday && (
-                <div className="w-1 h-1 rounded-full bg-black/40 mt-1" />
+                <div className="w-1.5 h-1.5 rounded-full bg-black/30 mt-1" />
               )}
               {isToday && (
-                 <div className="w-1 h-1 rounded-full bg-white mt-1 animate-pulse" />
+                 <div className="w-1.5 h-1.5 rounded-full bg-white mt-1 animate-pulse" />
+              )}
+              
+              {/* Day indicator for mobile context */}
+              {isToday && (
+                <span className="absolute top-1 right-1 text-[6px] font-black opacity-40">TODAY</span>
               )}
             </button>
           );

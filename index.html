@@ -19,8 +19,9 @@
             font-family: 'Noto Sans KR', sans-serif;
             background-color: #C1D8C3;
             margin: 0; padding: 0; min-height: 100vh;
-            display: flex; align-items: center; justify-content: center;
+            display: flex; align-items: stretch; justify-content: center;
         }
+        #root { width: 100%; height: 100%; display: flex; flex-direction: column; }
         #root:empty::before {
             content: '애플리케이션을 불러오는 중...';
             position: absolute;
@@ -40,6 +41,12 @@
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+        
+        /* Edge to Edge Mobile UI */
+        @media (max-width: 639px) {
+            body { align-items: stretch; }
+            #root { height: 100vh; }
+        }
     </style>
 
     <script type="importmap">
@@ -61,40 +68,43 @@
 
     <script type="module">
         const moduleCache = new Map();
+        // 원본 URL 매핑을 추적하여 상대 경로 해결을 돕습니다.
+        const originMap = new Map();
 
-        async function loadAndTransform(url) {
-            const absoluteUrl = new URL(url, window.location.href).href;
+        async function loadAndTransform(url, baseUrl = window.location.href) {
+            // URL 생성 시 발생할 수 있는 오류 방지
+            let absoluteUrl;
+            try {
+                absoluteUrl = new URL(url, baseUrl).href;
+            } catch (e) {
+                console.error(`[Loader] Invalid URL: ${url} with base ${baseUrl}`);
+                throw e;
+            }
+
             if (moduleCache.has(absoluteUrl)) return moduleCache.get(absoluteUrl);
 
-            console.log(`[Loader] Fetching: ${absoluteUrl}`);
             const response = await fetch(absoluteUrl);
             if (!response.ok) throw new Error(`Failed to load ${absoluteUrl} (${response.status})`);
             let code = await response.text();
 
-            // 상대 경로 임포트 매칭 (./ 및 ../ 포함)
-            // 예: import {x} from './y.ts' 또는 export * from '../z.tsx'
             const importRegex = /((?:import|export)\s+[\s\S]*?\s+from\s+['"])(\.\.?\/.*?\.(?:tsx|ts|js))(['"])/g;
             
-            // 모든 임포트 문을 찾아서 재귀적으로 변환
             const matches = Array.from(code.matchAll(importRegex));
             for (const match of matches) {
                 const [fullMatch, prefix, subPath, suffix] = match;
-                const subUrl = new URL(subPath, absoluteUrl).href;
                 try {
-                    const blobUrl = await loadAndTransform(subUrl);
+                    const blobUrl = await loadAndTransform(subPath, absoluteUrl);
                     code = code.replace(fullMatch, `${prefix}${blobUrl}${suffix}`);
                 } catch (e) {
                     console.error(`[Loader] Error transforming sub-module ${subPath}:`, e);
                 }
             }
 
-            // Babel 변환
             const transformed = Babel.transform(code, {
                 presets: ['react', 'typescript'],
                 filename: absoluteUrl,
             }).code;
 
-            // Blob 생성 (MIME 타입을 javascript로 강제 지정하여 GitHub Pages의 오작동 방지)
             const blob = new Blob([transformed], { type: 'application/javascript' });
             const blobUrl = URL.createObjectURL(blob);
             moduleCache.set(absoluteUrl, blobUrl);
@@ -103,7 +113,6 @@
 
         async function init() {
             try {
-                // 시작점: index.tsx
                 const entryPoint = './index.tsx';
                 const entryUrl = await loadAndTransform(entryPoint);
                 
@@ -113,35 +122,20 @@
                 document.body.appendChild(script);
             } catch (err) {
                 console.error('[Bootstrap] App failed to start:', err);
-                document.getElementById('root').innerHTML = `
-                    <div style="text-align:center; padding: 40px; color: #444; max-width: 400px; margin: 0 auto;">
-                        <h1 style="font-size: 24px; font-weight: 900; margin-bottom: 10px;">로딩 실패</h1>
-                        <p style="margin-bottom: 20px; opacity: 0.7;">브라우저 캐시 문제일 수 있습니다. 강력한 새로고침을 시도해 보세요.</p>
-                        <button onclick="localStorage.clear(); location.reload(true);" style="background:black; color:white; padding:15px 30px; border-radius:30px; border:none; cursor:pointer; font-weight:bold; width: 100%;">캐시 초기화 및 새로고침</button>
-                        <pre style="margin-top:20px; font-size:10px; text-align:left; background:rgba(0,0,0,0.05); padding:15px; border-radius:15px; overflow:auto; white-space: pre-wrap;">${err.stack || err.message}</pre>
-                    </div>
-                `;
+                const root = document.getElementById('root');
+                if (root) {
+                    root.innerHTML = `
+                        <div style="text-align:center; padding: 40px; color: #444; max-width: 400px; margin: 0 auto;">
+                            <h1 style="font-size: 24px; font-weight: 900; margin-bottom: 10px;">로딩 실패</h1>
+                            <p style="margin-bottom: 20px; opacity: 0.7;">네트워크 환경을 확인해 주세요.</p>
+                            <pre style="margin-top:20px; font-size:10px; text-align:left; background:rgba(0,0,0,0.05); padding:15px; border-radius:15px; overflow:auto; white-space: pre-wrap;">${err.message}</pre>
+                        </div>
+                    `;
+                }
             }
         }
 
         init();
-    </script>
-
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').then(reg => {
-                    reg.onupdatefound = () => {
-                        const installingWorker = reg.installing;
-                        installingWorker.onstatechange = () => {
-                            if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                window.location.reload();
-                            }
-                        };
-                    };
-                });
-            });
-        }
     </script>
 </body>
 </html>
