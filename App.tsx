@@ -1,6 +1,6 @@
 
-import React, { useState, useMemo } from 'react';
-import { Settings, Calendar, PenLine, Grid } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Settings, Calendar, PenLine, Grid, Download } from 'lucide-react';
 import { useChallenge } from './hooks/useChallenge.ts';
 import { AppMode } from './types.ts';
 import DailyView from './components/DailyView.tsx';
@@ -14,19 +14,35 @@ const App: React.FC = () => {
   const [mode, setMode] = useState<AppMode>('calendar');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedViewerDay, setSelectedViewerDay] = useState<number | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   const currentDay = useMemo(() => getCurrentDayNumber(), [getCurrentDayNumber]);
   const activeDay = selectedViewerDay || currentDay;
+
+  useEffect(() => {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    });
+  }, []);
+
+  const handleInstall = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') setDeferredPrompt(null);
+    }
+  };
 
   if (!data.isInitialized) {
     return <SetupScreen onComplete={initializeChallenge} />;
   }
 
   return (
-    <div className="min-h-screen bg-[#C1D8C3] flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md h-[90vh] bg-[#C1D8C3] shadow-2xl rounded-3xl relative overflow-hidden flex flex-col border-4 border-white/20">
+    <div className="min-h-screen bg-[#C1D8C3] flex flex-col items-center justify-center p-0 sm:p-4">
+      <div className="w-full max-w-md h-screen sm:h-[90vh] bg-[#C1D8C3] sm:shadow-2xl sm:rounded-3xl relative overflow-hidden flex flex-col border-0 sm:border-4 border-white/20">
         
-        <header className="p-6 flex justify-between items-center z-10">
+        <header className="p-6 flex justify-between items-center z-10 pt-10 sm:pt-6">
           <button 
             onClick={() => setIsSettingsOpen(true)}
             className="p-2 hover:bg-black/5 rounded-full transition-colors"
@@ -39,6 +55,14 @@ const App: React.FC = () => {
           </h1>
 
           <div className="flex gap-2">
+            {deferredPrompt && (
+               <button 
+                onClick={handleInstall}
+                className="p-2 bg-black text-white rounded-full animate-bounce"
+              >
+                <Download size={20} />
+              </button>
+            )}
             <button 
               onClick={() => setMode(mode === 'grid' ? 'calendar' : 'grid')}
               className={`p-2 rounded-full transition-all ${mode === 'grid' ? 'bg-black text-white' : 'hover:bg-black/5 text-black/70'}`}
@@ -82,7 +106,7 @@ const App: React.FC = () => {
           )}
         </main>
 
-        <footer className="p-6 flex justify-around items-center border-t border-black/5 bg-white/10 backdrop-blur-sm">
+        <footer className="p-6 pb-10 sm:pb-6 flex justify-around items-center border-t border-black/5 bg-white/10 backdrop-blur-sm">
           <button 
             onClick={() => { setMode('calendar'); setSelectedViewerDay(null); }}
             className={`p-4 rounded-2xl transition-all ${mode === 'calendar' ? 'bg-black text-white' : 'text-black/60 hover:bg-black/5'}`}
