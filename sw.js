@@ -1,9 +1,19 @@
 
-const CACHE_NAME = 'challenge-100-v1';
+const CACHE_NAME = 'challenge-100-v3';
 const ASSETS = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  'https://esm.sh/run-tsx',
+  './index.tsx',
+  './App.tsx',
+  './types.ts',
+  './hooks/useChallenge.ts',
+  './components/DailyView.tsx',
+  './components/InputView.tsx',
+  './components/GridView.tsx',
+  './components/SettingsModal.tsx',
+  './components/SetupScreen.tsx'
 ];
 
 self.addEventListener('install', (event) => {
@@ -15,10 +25,19 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Simple network-first strategy for dynamic TSX files
   event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request);
+    caches.match(event.request).then((response) => {
+      return response || fetch(event.request);
+    })
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name))
+      );
     })
   );
 });
