@@ -10,6 +10,7 @@
     <link rel="manifest" href="manifest.json">
     <title>100일 100자 글쓰기 챌린지</title>
     
+    <!-- 스타일 및 폰트 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
     
@@ -29,17 +30,6 @@
             writing-mode: vertical-rl;
             text-orientation: mixed;
         }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 4px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(0,0,0,0.1);
-            border-radius: 10px;
-        }
         #root:empty::before {
             content: '애플리케이션을 불러오는 중...';
             display: flex;
@@ -49,8 +39,21 @@
             color: rgba(0,0,0,0.4);
             font-weight: bold;
         }
+        #error-display {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: white;
+            padding: 2rem;
+            z-index: 9999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
     </style>
 
+    <!-- 의존성 매핑 -->
     <script type="importmap">
 {
   "imports": {
@@ -63,21 +66,37 @@
   }
 }
 </script>
+
+    <!-- Babel Standalone: TSX 파일을 브라우저에서 직접 변환 -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
     <div id="root"></div>
+    
+    <!-- 로딩 실패 시 안내 -->
+    <div id="error-display">
+        <h1 class="text-xl font-bold mb-4">앱을 불러오지 못했습니다.</h1>
+        <p class="text-gray-600 mb-6">인터넷 연결을 확인하거나 페이지를 새로고침 해주세요.</p>
+        <button onclick="window.location.reload()" class="bg-black text-white px-6 py-2 rounded-full">새로고침</button>
+    </div>
 
-    <!-- 브라우저에서 TSX를 실행하기 위한 로더. 서버의 MIME 타입 제한을 무시하고 파일을 가져와 변환합니다. -->
-    <script type="module">
-        import "https://esm.sh/run-tsx";
-    </script>
-    <script type="text/tsx" src="index.tsx"></script>
+    <!-- 메인 스크립트 실행 -->
+    <script type="text/babel" data-type="module" src="index.tsx"></script>
 
     <script>
+        // 5초 후에도 로딩이 안 되면 에러 표시
+        setTimeout(() => {
+            const root = document.getElementById('root');
+            if (root && root.innerHTML === '') {
+                document.getElementById('error-display').style.display = 'flex';
+            }
+        }, 5000);
+
+        // 서비스 워커 등록
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js').catch(err => {
-                    console.log('Service Worker registration failed: ', err);
+                    console.warn('SW registration skipped or failed:', err);
                 });
             });
         }
