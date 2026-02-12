@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'challenge-100-v4';
+const CACHE_NAME = 'challenge-100-v5';
 const ASSETS = [
   './',
   './index.html',
@@ -8,31 +8,11 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting(); // 즉시 활성화
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS);
     })
-  );
-});
-
-// Network First 전략 (정적 호스팅 환경용)
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // 성공적인 응답이면 캐시에 저장
-        if (response && response.status === 200) {
-          const cacheCopy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, cacheCopy);
-          });
-        }
-        return response;
-      })
-      .catch(() => {
-        // 네트워크 실패 시 캐시에서 반환
-        return caches.match(event.request);
-      })
   );
 });
 
@@ -43,5 +23,11 @@ self.addEventListener('activate', (event) => {
         cacheNames.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name))
       );
     })
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });
