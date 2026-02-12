@@ -23,6 +23,9 @@
         }
         #root:empty::before {
             content: '애플리케이션을 불러오는 중...';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
             font-weight: bold;
             color: rgba(0,0,0,0.4);
             animation: pulse 1.5s infinite;
@@ -34,6 +37,9 @@
         }
         .font-display { font-family: 'Playfair Display', serif; }
         .vertical-text { writing-mode: vertical-rl; text-orientation: mixed; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
     </style>
 
     <script type="importmap">
@@ -56,60 +62,63 @@
     <script type="module">
         const moduleCache = new Map();
 
-        async function loadAndTransform(path) {
-            // 정규화된 경로 생성
-            const fullPath = path.startsWith('./') ? path : `./${path}`;
-            if (moduleCache.has(fullPath)) return moduleCache.get(fullPath);
+        async function loadAndTransform(url) {
+            const absoluteUrl = new URL(url, window.location.href).href;
+            if (moduleCache.has(absoluteUrl)) return moduleCache.get(absoluteUrl);
 
-            console.log(`Loading: ${fullPath}`);
-            const response = await fetch(fullPath);
-            if (!response.ok) throw new Error(`Failed to load ${fullPath}`);
+            console.log(`[Loader] Fetching: ${absoluteUrl}`);
+            const response = await fetch(absoluteUrl);
+            if (!response.ok) throw new Error(`Failed to load ${absoluteUrl} (${response.status})`);
             let code = await response.text();
 
-            // 1. 코드 내의 상대 경로 임포트 찾기 (./... .tsx 또는 .ts)
-            // 예: import App from './App.tsx'
-            const importRegex = /(import|export)\s+([\s\S]*?)\s+from\s+['"](\.\/.*?\.(?:tsx|ts))['"]/g;
-            const imports = Array.from(code.matchAll(importRegex));
-
-            for (const match of imports) {
-                const [fullMatch, type, content, subPath] = match;
-                // 해당 임포트 파일도 재귀적으로 변환
-                const blobUrl = await loadAndTransform(subPath);
-                // 원본 경로를 Blob URL로 치환
-                code = code.replace(fullMatch, `${type} ${content} from '${blobUrl}'`);
+            // 상대 경로 임포트 매칭 (./ 및 ../ 포함)
+            // 예: import {x} from './y.ts' 또는 export * from '../z.tsx'
+            const importRegex = /((?:import|export)\s+[\s\S]*?\s+from\s+['"])(\.\.?\/.*?\.(?:tsx|ts|js))(['"])/g;
+            
+            // 모든 임포트 문을 찾아서 재귀적으로 변환
+            const matches = Array.from(code.matchAll(importRegex));
+            for (const match of matches) {
+                const [fullMatch, prefix, subPath, suffix] = match;
+                const subUrl = new URL(subPath, absoluteUrl).href;
+                try {
+                    const blobUrl = await loadAndTransform(subUrl);
+                    code = code.replace(fullMatch, `${prefix}${blobUrl}${suffix}`);
+                } catch (e) {
+                    console.error(`[Loader] Error transforming sub-module ${subPath}:`, e);
+                }
             }
 
-            // 2. Babel을 사용하여 현재 파일 변환
+            // Babel 변환
             const transformed = Babel.transform(code, {
                 presets: ['react', 'typescript'],
-                filename: fullPath,
+                filename: absoluteUrl,
             }).code;
 
-            // 3. 변환된 코드를 Blob으로 만들어 URL 생성 (MIME 타입을 강제로 JS로 지정)
+            // Blob 생성 (MIME 타입을 javascript로 강제 지정하여 GitHub Pages의 오작동 방지)
             const blob = new Blob([transformed], { type: 'application/javascript' });
-            const url = URL.createObjectURL(blob);
-            moduleCache.set(fullPath, url);
-            return url;
+            const blobUrl = URL.createObjectURL(blob);
+            moduleCache.set(absoluteUrl, blobUrl);
+            return blobUrl;
         }
 
         async function init() {
             try {
-                // 진입점인 index.tsx부터 변환 시작
-                const entryUrl = await loadAndTransform('./index.tsx');
+                // 시작점: index.tsx
+                const entryPoint = './index.tsx';
+                const entryUrl = await loadAndTransform(entryPoint);
                 
-                // 최종적으로 변환된 index.tsx를 실행
                 const script = document.createElement('script');
                 script.type = 'module';
                 script.src = entryUrl;
                 document.body.appendChild(script);
             } catch (err) {
-                console.error('App bootstrap failed:', err);
+                console.error('[Bootstrap] App failed to start:', err);
                 document.getElementById('root').innerHTML = `
-                    <div style="text-align:center; padding: 40px; color: #444;">
-                        <h1 style="font-size: 20px; font-weight: bold; margin-bottom: 10px;">앱 실행 오류</h1>
-                        <p style="margin-bottom: 20px; opacity: 0.7;">파일을 불러오는 중에 문제가 발생했습니다.</p>
-                        <button onclick="location.reload()" style="background:black; color:white; padding:12px 24px; border-radius:30px; border:none; cursor:pointer; font-weight:bold;">새로고침</button>
-                        <pre style="margin-top:20px; font-size:10px; text-align:left; background:#eee; padding:10px; border-radius:10px; overflow:auto;">${err.message}</pre>
+                    <div style="text-align:center; padding: 40px; color: #444; max-width: 400px; margin: 0 auto;">
+                        <h1 style="font-size: 24px; font-weight: 900; margin-bottom: 10px;">로딩 실패</h1>
+                        <p style="margin-bottom: 20px; opacity: 0.7;">브라우저 캐시 문제일 수 있습니다. 강력한 새로고침을 시도해 보세요.</p>
+                        <button onclick="localStorage.clear(); location.reload(true);" style="background:black; color:white; padding:15px 30px; border-radius:30px; border:none; cursor:pointer; font-weight:bold; width: 100%;">캐시 초기화 및 새로고침</button>
+                        <pre style="margin-top:20px; font-size:10px; text-align:left; background:rgba(0,0,0,0.05); padding:15px; border-radius:15px; overflow:auto; white-space: pre-wrap;">${err.stack || err.message}</pre>
                     </div>
                 `;
             }
@@ -119,7 +128,6 @@
     </script>
 
     <script>
-        // 서비스 워커 등록 (업데이트 확인)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js').then(reg => {
