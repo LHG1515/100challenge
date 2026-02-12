@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'challenge-100-v5';
+const CACHE_NAME = 'challenge-100-v6';
 const ASSETS = [
   './',
   './index.html',
@@ -8,7 +8,7 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
-  self.skipWaiting(); // 즉시 활성화
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS);
@@ -27,6 +27,7 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // 네트워크 우선 전략으로 변경하여 최신 파일을 가져오도록 함
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
   );
