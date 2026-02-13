@@ -8,45 +8,40 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#C1D8C3">
-    <link rel="manifest" href="manifest.json">
     <title>100일 100자 글쓰기 챌린지</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
     
     <style>
-        body {
+        :root { --app-bg: #C1D8C3; }
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        html, body {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; background-color: var(--app-bg);
             font-family: 'Noto Sans KR', sans-serif;
-            background-color: #C1D8C3;
-            margin: 0; padding: 0; min-height: 100vh;
-            display: flex; align-items: stretch; justify-content: center;
         }
         #root { width: 100%; height: 100%; display: flex; flex-direction: column; }
         #root:empty::before {
-            content: '애플리케이션을 불러오는 중...';
-            position: absolute;
-            top: 50%; left: 50%;
+            content: '챌린지를 준비하고 있습니다...';
+            position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            font-weight: bold;
-            color: rgba(0,0,0,0.4);
-            animation: pulse 1.5s infinite;
+            font-weight: bold; color: rgba(0,0,0,0.4);
+            animation: pulse 1.5s infinite; width: 100%; text-align: center;
         }
-        @keyframes pulse {
-            0% { opacity: 0.4; }
-            50% { opacity: 0.8; }
-            100% { opacity: 0.4; }
-        }
+        @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 0.8; } 100% { opacity: 0.4; } }
         .font-display { font-family: 'Playfair Display', serif; }
-        .vertical-text { writing-mode: vertical-rl; text-orientation: mixed; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
         
-        /* Edge to Edge Mobile UI */
-        @media (max-width: 639px) {
-            body { align-items: stretch; }
-            #root { height: 100vh; }
+        @media print {
+            body, #root { background-color: white !important; overflow: visible !important; height: auto !important; }
+            .no-print { display: none !important; }
+            #print-area { display: block !important; visibility: visible !important; }
+            .print-page { page-break-after: always; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 40px; border: 2px solid black; }
         }
+        #print-area { display: none; }
     </style>
 
     <script type="importmap">
@@ -56,6 +51,7 @@
     "react-dom": "https://esm.sh/react-dom@19.0.0",
     "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
     "lucide-react": "https://esm.sh/lucide-react@0.460.0?external=react",
+    "react/jsx-runtime": "https://esm.sh/react@19.0.0/jsx-runtime",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
     "react/": "https://esm.sh/react@^19.2.4/"
   }
@@ -65,45 +61,82 @@
 </head>
 <body>
     <div id="root"></div>
-
     <script type="module">
         const moduleCache = new Map();
-        // 원본 URL 매핑을 추적하여 상대 경로 해결을 돕습니다.
-        const originMap = new Map();
+        
+        const getBaseUrl = () => {
+            const url = new URL('./', window.location.href);
+            return url.href;
+        };
 
-        async function loadAndTransform(url, baseUrl = window.location.href) {
-            // URL 생성 시 발생할 수 있는 오류 방지
+        const rootBase = getBaseUrl();
+
+        async function loadAndTransform(url, base = rootBase) {
+            // Standardize base to ensure it's a directory URL for resolving relative paths
+            const effectiveBase = (base.includes('.') && !base.endsWith('/')) 
+                ? base.substring(0, base.lastIndexOf('/') + 1) 
+                : base;
+            
             let absoluteUrl;
             try {
-                absoluteUrl = new URL(url, baseUrl).href;
+                absoluteUrl = new URL(url, effectiveBase).href;
             } catch (e) {
-                console.error(`[Loader] Invalid URL: ${url} with base ${baseUrl}`);
+                console.error(`[Loader] Failed to resolve URL: ${url} relative to ${effectiveBase}`);
                 throw e;
             }
-
+            
             if (moduleCache.has(absoluteUrl)) return moduleCache.get(absoluteUrl);
 
-            const response = await fetch(absoluteUrl);
-            if (!response.ok) throw new Error(`Failed to load ${absoluteUrl} (${response.status})`);
+            let response;
+            try {
+                response = await fetch(absoluteUrl);
+            } catch (e) {
+                console.error(`[Loader] Fetch failed for: ${absoluteUrl}`, e);
+                throw new Error(`네트워크 오류: ${absoluteUrl}를 불러올 수 없습니다. (${e.message})`);
+            }
+
+            if (!response.ok) {
+                throw new Error(`로드 실패: ${absoluteUrl} (상태: ${response.status})`);
+            }
+            
             let code = await response.text();
 
-            const importRegex = /((?:import|export)\s+[\s\S]*?\s+from\s+['"])(\.\.?\/.*?\.(?:tsx|ts|js))(['"])/g;
-            
+            // Match relative imports: import ... from './file.ts'
+            const importRegex = /((?:import|export)\s+[\s\S]*?\s+from\s+['"])(\.\.?\/.*?\.(?:tsx?|jsx?|js))(['"])/g;
+            const replacements = new Map();
             const matches = Array.from(code.matchAll(importRegex));
+            
             for (const match of matches) {
-                const [fullMatch, prefix, subPath, suffix] = match;
-                try {
-                    const blobUrl = await loadAndTransform(subPath, absoluteUrl);
-                    code = code.replace(fullMatch, `${prefix}${blobUrl}${suffix}`);
-                } catch (e) {
-                    console.error(`[Loader] Error transforming sub-module ${subPath}:`, e);
+                const [full, prefix, sub, suffix] = match;
+                if (!replacements.has(full)) {
+                    try {
+                        const blobUrl = await loadAndTransform(sub, absoluteUrl);
+                        replacements.set(full, `${prefix}${blobUrl}${suffix}`);
+                    } catch (e) {
+                        console.error(`[Loader] Dependency resolution failed in ${absoluteUrl} for ${sub}:`, e);
+                        throw e;
+                    }
                 }
             }
 
-            const transformed = Babel.transform(code, {
-                presets: ['react', 'typescript'],
-                filename: absoluteUrl,
-            }).code;
+            // Replace found import paths with blob URLs
+            for (const [orig, repl] of replacements) {
+                code = code.split(orig).join(repl);
+            }
+
+            let transformed;
+            try {
+                transformed = Babel.transform(code, {
+                    presets: [
+                        ['react', { runtime: 'automatic' }], 
+                        ['typescript', { allExtensions: true, isTSX: true }]
+                    ],
+                    filename: absoluteUrl,
+                }).code;
+            } catch (e) {
+                console.error(`[Loader] Babel transform error in ${absoluteUrl}:`, e);
+                throw new Error(`변환 오류: ${absoluteUrl} (${e.message})`);
+            }
 
             const blob = new Blob([transformed], { type: 'application/javascript' });
             const blobUrl = URL.createObjectURL(blob);
@@ -113,22 +146,36 @@
 
         async function init() {
             try {
-                const entryPoint = './index.tsx';
-                const entryUrl = await loadAndTransform(entryPoint);
-                
+                // Clear any old service workers that might be causing fetch issues
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const reg of registrations) {
+                        await reg.unregister();
+                    }
+                }
+
+                const entryUrl = await loadAndTransform('./index.tsx');
                 const script = document.createElement('script');
                 script.type = 'module';
                 script.src = entryUrl;
+                script.onerror = (e) => {
+                    console.error('[Bootstrap] Script execution failed');
+                    throw new Error('앱 실행 스크립트 로드 중 오류가 발생했습니다.');
+                };
                 document.body.appendChild(script);
             } catch (err) {
-                console.error('[Bootstrap] App failed to start:', err);
+                console.error('[Bootstrap Error]', err);
                 const root = document.getElementById('root');
                 if (root) {
                     root.innerHTML = `
-                        <div style="text-align:center; padding: 40px; color: #444; max-width: 400px; margin: 0 auto;">
-                            <h1 style="font-size: 24px; font-weight: 900; margin-bottom: 10px;">로딩 실패</h1>
-                            <p style="margin-bottom: 20px; opacity: 0.7;">네트워크 환경을 확인해 주세요.</p>
-                            <pre style="margin-top:20px; font-size:10px; text-align:left; background:rgba(0,0,0,0.05); padding:15px; border-radius:15px; overflow:auto; white-space: pre-wrap;">${err.message}</pre>
+                        <div style="padding:40px;text-align:center;font-family:sans-serif;max-width:500px;margin:0 auto;line-height:1.6;">
+                            <h1 style="color:#d32f2f;margin-bottom:10px;">시스템 로드 실패</h1>
+                            <div style="background:#f5f5f5;padding:15px;border-radius:10px;text-align:left;margin-bottom:20px;border:1px solid #ddd;">
+                                <p style="color:#333;font-size:14px;margin:0 0 10px 0;font-weight:bold;">오류 내용:</p>
+                                <code style="color:#666;font-size:12px;word-break:break-all;white-space:pre-wrap;">${err.message}</code>
+                            </div>
+                            <p style="color:#666;font-size:14px;margin-bottom:20px;">네트워크 연결 상태를 확인하거나 아래 버튼을 눌러 다시 시도해 주세요.</p>
+                            <button onclick="location.reload()" style="padding:12px 24px;background:#000;color:#fff;border:none;border-radius:12px;font-weight:bold;cursor:pointer;transition:transform 0.1s active:scale-95;">페이지 새로고침</button>
                         </div>
                     `;
                 }
